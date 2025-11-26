@@ -39,42 +39,65 @@ namespace {
     }
 }
 
-size_t Fasta::cargar(const std::string& nombre_archivo) {
+size_t Fasta::cargar(const std::string& nombre_archivo) {  
     std::ifstream in(nombre_archivo);
-    if (!in) {
-        // Error de lectura o inexistente
+    if (!in) {  
         return std::numeric_limits<size_t>::max();
     }
 
     std::vector<Secuencia> temp;
-    std::string line;
-    bool dentro = false;
-    std::string desc, datos;
+    std::vector<std::size_t> widthsTemp;  
 
-    while (std::getline(in, line)) {
-        if (!line.empty() && line[0] == '>') {
-            if (dentro) {
+    std::string line;  
+    bool dentro = false;
+    std::string desc, datos;  
+    std::size_t currentWidth = 0;
+    bool firstDataLine = true;
+
+    // leer línea por línea  
+    while (std::getline(in, line)) {  
+        if (!line.empty() && line[0] == '>') { 
+            
+            if (dentro) {  
                 temp.emplace_back(desc, datos);
-                datos.clear();
+                widthsTemp.push_back(currentWidth); // función para guardar ancho de línea  
+                datos.clear();  
+                currentWidth = 0;  
+                firstDataLine = true;  
             }
+
             desc = rstrip(line.substr(1));
-            dentro = true;
+            dentro = true;  
+
         } else if (dentro) {
-            datos += rstrip(line);
+
+            std::string trimmed = rstrip(line); 
+            if (trimmed.empty()) continue;
+
+            if (firstDataLine) {  
+                currentWidth = trimmed.size();
+                firstDataLine = false;  
+            }
+
+            datos += trimmed; 
         }
     }
 
-    if (dentro) {
-        temp.emplace_back(desc, datos);
+    if (dentro) {  
+        temp.emplace_back(desc, datos);  // guarda la secuencia final  
+        widthsTemp.push_back(currentWidth);  //guarda ancho de línea final  
     }
 
-    if (temp.empty()) {
-        return 0; // No hay secuencias con '>'
+    if (temp.empty()) {  
+        return 0;
     }
 
-    secuencias_.swap(temp); // Sobrescribe memoria con las nuevas
+    secuencias_.swap(temp);  // actualiza secuencias  
+    lineWidths_.swap(widthsTemp);  // actualiza anchos de línea  
+
     return secuencias_.size();
 }
+
 
 bool Fasta::guardar(const std::string& nombre_archivo) const {
     if (secuencias_.empty()) return false;
@@ -337,4 +360,21 @@ bool Fasta::decodificarHuffman(const std::string& nombre_archivo) {
     lineWidths_.swap(nuevosWidths);
 
     return true;
+}
+
+int Fasta::buscarIndicePorDescripcion(const std::string& descripcion) const {
+    for (std::size_t i = 0; i < secuencias_.size(); ++i) {
+        if (secuencias_[i].getDescription() == descripcion) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+std::size_t Fasta::getLineWidth(std::size_t idx) const {
+    if (idx < lineWidths_.size() && lineWidths_[idx] > 0) {
+        return lineWidths_[idx];
+    }
+    // Si no tenemos ancho registrado (por seguridad), usamos un valor por defecto
+    return 60;
 }

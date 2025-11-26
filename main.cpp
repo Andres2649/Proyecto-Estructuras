@@ -5,23 +5,29 @@
 #include <vector>
 #include <algorithm>
 #include "Fasta.h"
+#include "Punto2D.h"
+#include "GrafoSecuencia.h"
+
 
 
 static void mostrarMenu() {
     std::cout
         << "================= MENU =================\n"
         << "Comandos disponibles:\n"
-        << "  cargar <nombre_archivo>        : Carga un archivo FASTA en memoria\n"
-        << "  listar_secuencias              : Muestra la cantidad y longitud de cada secuencia\n"
-        << "  es_subsecuencia <subsecuencia> : Cuenta repeticiones de una subsecuencia (solapadas)\n"
-        << "  histograma <descripcion>       : Imprime el histograma de la secuencia indicada\n"
-        << "  enmascarar <subsecuencia>      : Reemplaza cada ocurrencia por 'X' en todas las secuencias\n"
-        << "  guardar <nombre_archivo>       : Guarda las secuencias actuales en un archivo FASTA\n"
-        << "  codificar <nombre_archivo.fabin> : Codificar secuencias en binario Huffman\n"
-        << "decodificar <archivo.fabin>\n"
-        << "  salir                          : Termina el programa\n"
+        << "  cargar <nombre_archivo>             : Carga un archivo FASTA en memoria\n"
+        << "  listar_secuencias                   : Muestra la cantidad y longitud de cada secuencia\n"
+        << "  es_subsecuencia <subsecuencia>      : Cuenta repeticiones de una subsecuencia (solapadas)\n"
+        << "  histograma <descripcion>            : Imprime el histograma de la secuencia indicada\n"
+        << "  enmascarar <subsecuencia>           : Reemplaza cada ocurrencia por 'X' en todas las secuencias\n"
+        << "  guardar <nombre_archivo>            : Guarda las secuencias actuales en un archivo FASTA\n"
+        << "  codificar <nombre_archivo.fabin>    : Codifica secuencias en binario Huffman\n"
+        << "  decodificar <archivo.fabin>         : Decodifica un archivo .fabin y carga sus secuencias\n"
+        << "  ruta_mas_corta <desc> <i> <j> <x> <y> : Calcula la ruta más corta entre dos bases\n"
+        << "  base_remota <desc> <i> <j>          : Encuentra la base más lejana y su ruta\n"
+        << "  salir                               : Termina el programa\n"
         << "========================================\n";
 }
+
 
 
 // ----------------------------------------------------
@@ -236,10 +242,6 @@ int main() {
                           << nombre << " .\n";
         }
 
-        else if (cmd == "salir" || cmd == "exit" || cmd == "quit") {
-            break;
-        }
-
        
         else if (cmd == "codificar") {
             std::string nombre;
@@ -284,6 +286,115 @@ int main() {
                   << nombre << " .\n";
     }
 }
+        else if (cmd == "ruta_mas_corta") { 
+            std::string desc;
+            int i, j, x, y;
+
+            if (!(iss >> desc >> i >> j >> x >> y)) {
+                std::cout << "Uso: ruta_mas_corta <descripcion> <i> <j> <x> <y>\n";
+                continue;
+            }
+
+            if (!db.haySecuencias()) {
+                std::cout << "(no hay secuencias cargadas) No hay secuencias cargadas en memoria.\n";
+            } else {
+                int idx = db.buscarIndicePorDescripcion(desc);
+                if (idx < 0) {
+                    std::cout << "(la secuencia no existe) La secuencia " << desc << " no existe.\n";
+                } else {
+                    const Secuencia& s = db.getSecuencia(static_cast<std::size_t>(idx));
+                    std::size_t width = db.getLineWidth(static_cast<std::size_t>(idx));
+
+                    GrafoSecuencia grafo(s.getData(), width);
+
+                    Punto2D origen{i, j};
+                    Punto2D destino{x, y};
+
+                    if (!grafo.existePunto(origen)) { 
+                        std::cout << "(posición de base origen inválida) La base en la posición ["
+                                  << i << "," << j << "] no existe.\n";
+                    } else if (!grafo.existePunto(destino)) {
+                        std::cout << "(posición de base destino inválida) La base en la posición ["
+                                  << x << "," << y << "] no existe.\n";
+                    } else {
+                        double costoTotal = 0.0;
+                        std::vector<Punto2D> ruta = grafo.rutaMasCorta(origen, destino, costoTotal);
+
+                        if (ruta.empty()) {
+                            std::cout << "No existe ruta entre las posiciones dadas.\n";
+                        } else {
+                            char baseO = grafo.baseEn(origen);
+                            char baseD = grafo.baseEn(destino);
+
+                            std::cout << "(la secuencia existe) Para la secuencia " << desc
+                                      << ", la ruta más corta entre la base "
+                                      << baseO << " en [" << i << "," << j << "] y la base "
+                                      << baseD << " en [" << x << "," << y << "] es: ";
+
+                            for (std::size_t k = 0; k < ruta.size(); ++k) {
+                                const Punto2D& p = ruta[k];
+                                std::cout << grafo.baseEn(p) << "[" << p.fila << "," << p.col << "]";
+                                if (k + 1 < ruta.size()) std::cout << " -> ";
+                            }
+
+                            std::cout << ". El costo total de la ruta es: " << costoTotal << "\n";
+                        }
+                    }
+                }
+            }
+        }
+
+        else if (cmd == "base_remota") {
+            std::string desc;
+            int i, j;
+
+            if (!(iss >> desc >> i >> j)) { 
+                std::cout << "Uso: base_remota <descripcion> <i> <j>\n";
+                continue;
+            }
+
+            if (!db.haySecuencias()) { 
+                std::cout << "(no hay secuencias cargadas) No hay secuencias cargadas en memoria.\n";
+            } else {
+                int idx = db.buscarIndicePorDescripcion(desc);
+                if (idx < 0) { 
+                    std::cout << "(la secuencia no existe) La secuencia " << desc << " no existe.\n";
+                } else {
+                    const Secuencia& s = db.getSecuencia(static_cast<std::size_t>(idx));
+                    std::size_t width = db.getLineWidth(static_cast<std::size_t>(idx));
+
+                    GrafoSecuencia grafo(s.getData(), width);
+
+                    Punto2D origen{i, j};
+
+                    if (!grafo.existePunto(origen)) { 
+                        std::cout << "(posición de base origen inválida) La base en la posición ["
+                                  << i << "," << j << "] no existe.\n";
+                    } else {
+                        Punto2D remoto;
+                        double costoTotal = 0; 
+                        std::vector<Punto2D> ruta = grafo.baseRemota(origen, remoto, costoTotal);
+
+                        char baseO = grafo.baseEn(origen);
+                        char baseR = grafo.baseEn(remoto);
+
+                        std::cout << "(la secuencia existe) Para la secuencia " << desc
+                                  << ", la base remota está ubicada en ["
+                                  << remoto.fila << "," << remoto.col << "], y la ruta entre la base "
+                                  << baseO << " en [" << i << "," << j << "] y la base "
+                                  << baseR << " en [" << remoto.fila << "," << remoto.col << "] es: ";
+
+                        for (std::size_t k = 0; k < ruta.size(); ++k) {
+                            const Punto2D& p = ruta[k];
+                            std::cout << grafo.baseEn(p) << "[" << p.fila << "," << p.col << "]";
+                            if (k + 1 < ruta.size()) std::cout << " -> ";
+                        }
+
+                        std::cout << ". El costo total de la ruta es: " << costoTotal << "\n";
+                    }
+                }
+            }
+        }
 
 
         else if (cmd == "salir" || cmd == "exit" || cmd == "quit") {

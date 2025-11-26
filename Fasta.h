@@ -23,7 +23,12 @@ public:
     size_t enmascararSubsecuencia(const std::string& subseq);//funcion para enmascarar una subseq dada por el usuario
     bool codificarHuffman(const std::string& nombre_archivo) const;
     bool decodificarHuffman(const std::string& nombre_archivo); // ← NUEVA
-    
+    bool haySecuencias() const { return !secuencias_.empty(); }  // función para verificar si hay secuencias cargadas
+    int buscarIndicePorDescripcion(const std::string& descripcion) const;  // función para obtener el índice de una secuencia por su descripción
+    std::size_t getLineWidth(std::size_t idx) const;  // función para obtener el ancho de línea (columnas) de una secuencia dada
+    const Secuencia& getSecuencia(std::size_t idx) const { return secuencias_.at(idx); }  // función para acceder a la secuencia en la posición idx
+
+
   
 };
 
