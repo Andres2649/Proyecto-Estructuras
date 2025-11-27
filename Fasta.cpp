@@ -168,6 +168,7 @@ size_t Fasta::enmascararSubsecuencia(const std::string& subseq) {
 
     return total;
 }
+
 bool Fasta::codificarHuffman(const std::string& nombre_archivo) const {
     if (secuencias_.empty()) {
         // El main imprimirá "(no hay secuencias cargadas) ..."
@@ -261,6 +262,9 @@ bool Fasta::codificarHuffman(const std::string& nombre_archivo) const {
     out.close();
     return ok;
 }
+
+//para la creacion de esta funcion, se utiliza chatgpt con el prompt de "con base a esta funcion de codificacion, 
+// genera una funcion que decodifique el archivo binario que genera la funcion previamente mencionada"
 bool Fasta::decodificarHuffman(const std::string& nombre_archivo) {
     std::ifstream in(nombre_archivo, std::ios::binary);
     if (!in) return false;
@@ -375,6 +379,6 @@ std::size_t Fasta::getLineWidth(std::size_t idx) const {
     if (idx < lineWidths_.size() && lineWidths_[idx] > 0) {
         return lineWidths_[idx];
     }
-    // Si no tenemos ancho registrado (por seguridad), usamos un valor por defecto
+  
     return 60;
 }

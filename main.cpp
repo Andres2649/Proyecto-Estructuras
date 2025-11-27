@@ -274,7 +274,7 @@ int main() {
         std::cout << "Uso: decodificar <archivo.fabin>\n";
         continue;
     }
-
+    //para la implementacion de esta funcion se utilizo chatgpt con el prompt, con base a la funcion de decodificar dada, genera el esqueleto para su implementacion en el main (todo el main)
     bool ok = db.decodificarHuffman(nombre);
     if (!ok) {
         std::cout << "(problemas en archivo) Error cargando desde "

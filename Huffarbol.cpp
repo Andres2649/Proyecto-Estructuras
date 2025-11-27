@@ -58,6 +58,8 @@ std::string HuffmanTree::encode(const std::string& text) const {
     return bits;
 }
 
+////para la creacion de esta funcion, se utiliza chatgpt con el prompt de "con base a esta funcion de codificacion, 
+// genera una funcion que decodifique el archivo binario que genera la funcion previamente mencionada"
 std::string HuffmanTree::decode(const std::string& bits) const {
     std::string out;
     HuffmanNode* node = root;
